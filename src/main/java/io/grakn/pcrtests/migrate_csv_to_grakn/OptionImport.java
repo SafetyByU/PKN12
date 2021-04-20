@@ -4,6 +4,7 @@ package io.grakn.pcrtests.migrate_csv_to_grakn;
 enum TypeImport
 {
 	IMPORTDPT,
+	IMPORTDPTLINKS,
 	IMPORTSHOP,
 	IMPORTPCRTEST,
 	IMPORTDPTCOUVREFEU,

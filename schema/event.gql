@@ -1,0 +1,306 @@
+define
+
+################
+## ATTRIBUTES ##
+################
+
+## evenement type : past, future, in progress
+
+Id sub attribute,
+	value string;
+
+Identity sub attribute,
+	value string;
+
+TypeValueId sub attribute,
+	value string;
+
+Description sub attribute,
+	value string;
+
+#typewhen sub attribute,
+#	value string,
+#	regex "^(past|future|inprogress)$",
+#	plays relativewhen;
+
+TypeWhen sub attribute,
+	value string,
+	regex "^(past|future|inprogress)$";
+
+TypeFrequency sub attribute,
+	value string,
+	regex "^(Daily|Weekly|Monthly|Yearly|Specific)$";
+
+TypeLocalization sub attribute,
+	value string,
+	regex "^(Private|CarePlan|Family|Association|Professional)$";
+
+TypeAddress sub attribute,
+	value string;
+
+TypeNumberTrip sub attribute,
+	value string;
+
+Language sub attribute,
+	value string,
+	regex "^(fr|en|de)$";
+
+EventDate sub attribute,
+		value datetime;
+
+Delay sub attribute,
+	value long;
+
+Year sub attribute,
+	value long;
+
+Pseudonym sub attribute,
+	value string;
+
+CodeGLN sub attribute,
+	value string;
+LabelGLN sub attribute,
+	value string;
+
+
+###################
+## GENERIC TYPES ##
+###################
+
+
+## typeevent and its relations
+event sub entity,
+	key Id,
+	plays registeredevent;
+eventrelations sub relation,
+	relates registeredevent,
+	relates actor,
+	relates object,
+	relates goal,
+	relates localization,
+	relates time;
+	
+## abstract structure 5W
+Resource sub entity, abstract,
+	key Identity,
+	plays resource;
+
+Who sub Resource , abstract,
+	plays actor,
+	plays who,
+	plays memberwho;
+What sub Resource,
+	has Description,
+	plays object;
+Why sub Resource ,
+	has Description,
+	plays goal;
+Where	sub Resource , abstract,
+	has TypeLocalization,
+	plays localization;
+When	sub Resource , abstract,
+	has TypeWhen,
+	plays time;
+
+###################
+## WHAT TYPES 	##
+###################
+
+## identified what
+IdentifiedWhat sub What;
+
+
+###################
+## WHO TYPES 	##
+###################
+
+## identified who
+IdentifiedWho sub Who;
+
+## patients cohort
+IdentifiedPatientCohort sub IdentifiedWho;
+
+
+## group hierarchy
+GroupWho sub IdentifiedWho,
+	plays parentwho;
+
+GroupRelation sub relation,
+	relates memberwho,
+	relates parentwho;
+
+
+###################
+## WHEN TYPES    ##
+###################
+
+##timestamp
+TimeStamp sub When, abstract,
+	plays startwhendate,
+	plays endwhendate,
+	plays relativedate,
+	plays belowdate,
+	plays abovedate;
+
+TimeDate sub TimeStamp,
+	has EventDate;
+TimeYear sub TimeStamp,
+	has Year;
+
+## periodic
+PeriodOfTime sub When,
+	has TypeFrequency,
+	plays periodoftime;
+
+SpecificPeriodicOfTime sub PeriodOfTime ,
+	has Delay;
+
+## relation to timestamp
+PeriodicRelation sub relation,
+	relates periodoftime,
+	relates startwhendate,
+	relates endwhendate;
+
+## relation to timestamp
+DatesBetweenRelation sub relation,
+	relates relativedate,
+	relates belowdate,
+	relates abovedate,
+	relates value;
+
+
+###################
+## WHERE TYPES   ##
+###################
+GLN sub Where, abstract,
+	has CodeGLN,
+	plays GLNcode;
+
+GLNLabel sub entity,
+	has Language,
+	has LabelGLN,
+	plays GLNlabel;
+
+GLNRelation sub relation,
+	relates GLNcode,
+	relates GLNlabel;
+	
+Country sub GLN;
+Region sub GLN;
+Departement sub GLN;
+Town sub GLN;
+Boat sub GLN;
+
+Trip sub Where,
+	has TypeNumberTrip;
+
+Specific sub Where,
+	has TypeAddress;
+
+## GLN hierarchy
+HierarchyWhere sub Where,
+	plays memberwhere,
+	plays parentwhere;
+
+HierarchyWhereRelation sub relation,
+	relates memberwhere,
+	relates parentwhere;
+
+## GLN Network
+DistanceDoubleValue sub DoubleValue,
+	plays distance;
+
+Where sub Resource,
+	plays neighbourfrom,
+	plays neighbourto,
+	plays where1,
+	plays where2;
+NeighbourWhereRelation sub relation,
+	relates neighbourfrom,
+	relates neighbourto;
+AxisWhereRelation sub relation,
+	relates where1,
+	relates where2,
+	relates distance;
+
+
+
+################################
+## PSEUDONYMOUSTYPE TYPES     ##
+################################
+
+## Pseudonymous Who
+Pseudonymous sub Who,
+	has Pseudonym,
+	plays pseudowho;
+
+PseudonymousRelation sub relation,
+	relates who,
+	relates pseudowho;
+
+## Pseudonymous Where
+PseudonymousWhere sub Where,
+	has Pseudonym,
+	plays pseudowhere;
+
+PseudonymousWhereRelation sub relation,
+	relates localization,
+	relates pseudowhere;
+
+###################
+## WHAT TYPES 	##
+###################
+
+
+###################
+## VALUE TYPES 	##
+###################
+
+IdValue sub attribute,
+	value string;
+
+Value sub entity,abstract,
+	key IdValue,
+	has TypeValueId,
+	plays value;
+
+LongValueAttribute sub attribute,
+	value long;
+DoubleValueAttribute sub attribute,
+	value double;
+StringValueAttribute sub attribute,
+	value string;
+
+#SpeedValueAttribute sub DoubleValueAttribute;
+#AccelerationValueAttribute sub DoubleValueAttribute;
+
+SpeedValueAttribute sub attribute,
+	value double;
+
+AccelerationValueAttribute sub attribute,
+	value double;
+
+LongValue sub  Value,
+	has LongValueAttribute;
+DoubleValue sub  Value,
+	has DoubleValueAttribute ;
+StringValue sub  Value,
+	has StringValueAttribute ;
+
+DoubleValueDerivated sub  DoubleValue,
+	has SpeedValueAttribute,
+	has AccelerationValueAttribute;
+
+
+TypeValue sub entity,
+	key IdValue,
+	plays typevalue;	
+
+ValueTypeRelation sub relation,
+	relates typevalue,
+	relates value;
+
+ValueRelation sub relation,
+	relates resource,
+	relates value;
+

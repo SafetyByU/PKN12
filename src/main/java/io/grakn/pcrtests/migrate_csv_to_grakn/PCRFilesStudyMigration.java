@@ -28,7 +28,8 @@ public class PCRFilesStudyMigration {
 	private static InputDepartementsCouvreFeu inputdepartementscouvrefeu;
 	private static InputWeather inputweather;
 	private static InputDepartements inputdepartements;
-
+	private static InputDepartementsLinks inputdepartementslinks;
+	
 	private static ReportPCRTest reportpcrtests;
 
 	/*
@@ -58,20 +59,25 @@ public class PCRFilesStudyMigration {
 	static final int maxcommit = 1;
 
 	static final int shop_minindice = minindice;
-	static final int shop_maxindice = -1;
+	static final int shop_maxindice = maxindice;
 
 	static final int dpt_minindice = minindice;
-	static final int dpt_maxindice = -1;
+	static final int dpt_maxindice = maxindice;
 
+	static final int dptlinks_minindice = minindice;
+	static final int dptlinks_maxindice = maxindice;
+	
 	static final int dc_minindice = minindice;
-	static final int dc_maxindice = -1;
+	static final int dc_maxindice = maxindice;
 
 	static final int sc_minindice = minindice;
-	static final int sc_maxindice = -1;
+	static final int sc_maxindice = maxindice;
 
 	static final int w_minindice = minindice;
-	static final int w_maxindice = -1;
+	static final int w_maxindice = maxindice;
 
+
+	
 	static final int pcr_minindice = minindice;
 	static final int pcr_maxindice = maxindice;
 
@@ -106,7 +112,7 @@ public class PCRFilesStudyMigration {
 	static final int pcr_mindays = 280;
 	static final int pcr_maxdays = 500;
 
-	static final String pcr_firstindice = "2000000";
+	static final String pcr_firstindice = "0";
 
 	abstract static class Input {
 		String path;
@@ -1472,7 +1478,20 @@ public class PCRFilesStudyMigration {
 			inputdepartements = new InputDepartements(optionImport, filedpt, maxget, dpt_minindice, dpt_maxindice);
 			inputs = inputdepartements.initialize(inputs);
 		}
-
+		// master data links departements
+		if (optionImport==null || optionImport.getTypeImport()==TypeImport.IMPORTDPTLINKS)
+		{
+			String filedpt="data/departementlinks";
+			if (optionImport!=null)
+			{
+				if ( optionImport.getFilename()!=null)
+				{
+					filedpt=optionImport.getFilename();
+				}
+			}
+			inputdepartementslinks = new InputDepartementsLinks(optionImport, filedpt, maxget, dptlinks_minindice, dptlinks_maxindice);
+			inputs = inputdepartementslinks.initialize(inputs);
+		}
 		// PCR TESTS
 		if (optionImport==null || optionImport.getTypeImport()==TypeImport.IMPORTPCRTEST)
 		{
