@@ -1,0 +1,106 @@
+
+
+define
+
+##################################
+## RULE SAME DATE               ##
+##################################
+
+EventPCRTestSameDateAncestorLinks sub relation,
+		relates localization,
+		relates nextdate,
+		relates ancestordate;
+
+##################################
+## RULE EVT ANCESTOR  SAMEDATE          ##
+##################################
+
+SameDateAncestorDatesRelationRule sub rule,
+when {
+    
+(ancestordate : $t2, nextdate : $t1) isa 	AncestorDatesRelation;
+(time2 : $t2, time1 : $t3, localization : $dept) isa 	EventPCRTestSameDateLinks;
+}, then {
+    	(nextdate : $t1, ancestordate : $t3, localization : $dept)
+	isa 		EventPCRTestSameDateAncestorLinks ;
+};
+
+##################################
+## RULE SAME DATE AND WHAT      ##
+##################################
+
+EventPCRTestSameDateWhatAncestorLinks sub relation,
+		relates localization,
+		relates nextdate,
+		relates ancestordate,
+		relates object1,
+		relates object2;
+
+
+SameDateWhatAncestorDatesRelationRule sub rule,
+when {
+    
+(ancestordate : $t2, nextdate : $t1) isa 	AncestorDatesRelation;
+(time1 : $t3, time2 : $t2, localization : $dept,
+object1 : $o1, object2 : $o2) isa 	EventPCRTestSameDateLinks;
+
+}, then {
+    	(nextdate : $t1, ancestordate : $t3, localization : $dept, object1 : $o1, object2 : $o2)
+	isa 		EventPCRTestSameDateWhatAncestorLinks ;
+};
+
+
+##################################
+## RULE SAME DATE AND WHATCLASS ##
+##################################
+
+EventPCRTestSameDateWhatClassAncestorLinks sub relation,
+		relates localization,
+		relates nextdate,
+		relates ancestordate,
+		relates object1,
+		relates classvalues;
+
+
+SameDateWhatClassAncestorDatesRelationRule sub rule,
+when {
+    
+(ancestordate : $t2, nextdate : $t1) isa 	AncestorDatesRelation;
+(time1 : $t3, time2 : $t2, localization : $dept,
+object1 : $o1, object2 : $o2) isa 	EventPCRTestSameDateLinks;
+
+($o1, classvalues : $cv) isa ClassValuesWhat;
+
+}, then {
+    	(nextdate : $t1, ancestordate : $t3, localization : $dept, 				object1 : $o1, classvalues:$cv)
+	isa 		EventPCRTestSameDateWhatClassAncestorLinks ;
+};
+
+
+
+##################################
+## RULE SAME DATE THAN VALUE             ##
+##################################
+
+EventPCRTestValueAncestorLinks sub relation,
+		relates localization,
+		relates value,
+		relates ancestordate,
+		relates nextdate;
+
+##################################
+## RULE EVT ANCESTOR  SAMEDATE          ##
+##################################
+
+ValueAncestorDatesRelationRule sub rule,
+when {
+(time1 : $t3, time2 : $t2, localization : $dept) isa 	EventPCRTestSameDateLinks;
+(ancestordate : $t2, nextdate : $t1) isa 	AncestorDatesRelation;
+(time : $t1, object : $o1)  isa 	EventPCRTestRelations;
+(value :$v1, resource : $o1) isa ValueRelation;
+
+
+}, then {
+    	(value : $v1,ancestordate : $t3, nextdate : $t1, localization : $dept)
+	isa 		EventPCRTestValueAncestorLinks ;
+};

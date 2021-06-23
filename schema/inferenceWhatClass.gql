@@ -1,0 +1,65 @@
+
+
+define
+
+ClassValuesWhat sub relation,
+	relates object,
+	relates classvalues;
+
+
+# RULE WEATHER CLASS
+
+ClassValuesWhatWeather sub rule,
+when {
+
+$cw isa ClassValues, has TypeValueId "WeatherTypeValue_T", has MinValueAttribute $min, has MaxValueAttribute $max;
+$w isa WhatWeather, has Attribut-TMoy $tmoy;
+$tmoy < $max;
+$tmoy > $min;
+
+}, then {
+    (object : $w, classvalues : $cw) isa ClassValuesWhat ;
+};
+
+# RULE DERIVATED CLASS
+ClassValuesWhatDoubleValue sub rule,
+when {
+$cw isa ClassValues, has TypeValueId "PCRTypeValue_Derivated", has MinValueAttribute $min, has MaxValueAttribute $max;
+$dvd isa DoubleValueDerivated, has DoubleValueAttribute $dv;
+$dv < $max;
+$dv > $min;
+$vr (value : $dvd, resource : $w) isa ValueRelation;
+$w isa What;
+}, then {
+    (object : $w, classvalues : $cw) isa ClassValuesWhat ;
+};
+
+
+# RULE DERIVATED CLASS
+ClassValuesWhatSpeedValue sub rule,
+when {
+$cw isa ClassValues, has TypeValueId "PCRTypeValue_Derivated", has MinValueAttribute $min, has MaxValueAttribute $max;
+$dvd isa DoubleValueDerivated, has SpeedValueAttribute $dv;
+$dv < $max;
+$dv > $min;
+$vr (value : $dvd, resource : $w) isa ValueRelation;
+$w isa What;
+}, then {
+    (object : $w, classvalues : $cw) isa ClassValuesWhat ;
+};
+
+# RULE DERIVATED CLASS
+ClassValuesWhatAccelerationValue sub rule,
+when {
+$cw isa ClassValues, has TypeValueId "PCRTypeValue_Derivated", has MinValueAttribute $min, has MaxValueAttribute $max;
+$dvd isa DoubleValueDerivated, has AccelerationValueAttribute $dv;
+$dv < $max;
+$dv > $min;
+$vr (value : $dvd, resource : $w) isa ValueRelation;
+$w isa What;
+}, then {
+    (object : $w, classvalues : $cw) isa ClassValuesWhat ;
+};
+
+
+

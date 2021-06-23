@@ -1,0 +1,36 @@
+
+
+define
+
+TimeStamp sub When, abstract,
+	plays ancestordate;
+
+##################################
+## RULE EVT ANCESTOR            ##
+##################################
+
+AncestorDatesRelation sub relation,
+	relates ancestordate,
+	relates nextdate;
+
+AncestorDatesOneLevelRelationRule sub rule,
+when {
+    
+(previousdate : $t2, nextdate : $t1) isa SequencedDatesRelation;
+}, then {
+    	(nextdate : $t1, ancestordate : $t2)
+	isa 		AncestorDatesRelation;
+};
+
+
+AncestorDatesMultiLevelRelationRule sub rule,
+when {
+    
+(ancestordate : $t3, nextdate : $t2) isa 	AncestorDatesRelation;
+(previousdate : $t2, nextdate : $t1) isa 	SequencedDatesRelation;
+}, then {
+    	(nextdate : $t1, ancestordate : $t3)
+	isa 		AncestorDatesRelation;
+};
+
+

@@ -1,0 +1,107 @@
+
+
+undefine
+
+##################################
+## RULE SAME DATE               ##
+##################################
+
+#EventPCRTestSameDateLinks sub relation,
+#		relates localization,
+#		relates time;
+
+# RULE WEATHER
+EventPCRTestSameDateWeatherLinksRule sub rule,
+when {
+
+$t1 isa PCRTimeDate, has EventDate $eventdate;
+$t2 isa WeatherTimeDate, has EventDate $eventdate;
+    
+$pcr1 (localization : $dept, time : $t1) isa 	EventPCRTestRelations;
+$weather1 (localization : $dept, time : $t2) isa 
+	EventWeatherRelations;
+
+}, then {
+    	(localization : $dept, time : $t1, time : $t2)
+		isa EventPCRTestSameDateLinks;
+};
+
+# RULE VACCIN
+EventPCRTestSameDateVaccinLinksRule sub rule,
+when {
+
+$t1 isa PCRTimeDate, has EventDate $eventdate;
+$t2 isa VaccinTimeDate, has EventDate $eventdate;
+    
+$pcr1 (localization : $dept, time : $t1) isa 	EventPCRTestRelations;
+$vaccin1 (localization : $dept, time : $t2) isa 
+	EventVaccinRelations;
+}, then {
+    	(localization : $dept, time : $t1, time : $t2)
+		isa EventPCRTestSameDateLinks;
+};
+
+# RULE DEPT CONFINEMENT
+EventPCRTestSameDateDeptConfinementLinksRule1 sub rule,
+when {
+
+$t1 isa PCRTimeDate, has EventDate $eventdate;
+$t2 isa DepartementConfinementTimeDate, has EventDate $eventdate;
+(startwhendate : $t2, PeriodOfTime : $pt2) isa PeriodicRelation;
+    
+$pcr1 (localization : $dept, time : $t1) isa 	EventPCRTestRelations;
+$evtconf2 (localization : $dept, time : $pt2) isa 
+	EventDepartementConfinementRelations;
+}, then {
+    	(localization : $dept, time : $t1, time : $t2)
+		isa EventPCRTestSameDateLinks;
+};
+
+# RULE DEPT CONFINEMENT
+EventPCRTestSameDateDeptConfinementLinksRule2 sub rule,
+when {
+
+$t1 isa PCRTimeDate, has EventDate $eventdate;
+$t2 isa DepartementConfinementTimeDate, has EventDate $eventdate;
+(endwhendate : $t2, PeriodOfTime : $pt2) isa PeriodicRelation;
+    
+$pcr1 (localization : $dept, time : $t1) isa 	EventPCRTestRelations;
+$evtconf2 (localization : $dept, time : $pt2) isa 
+	EventDepartementConfinementRelations;
+}, then {
+    	(localization : $dept, time : $t1, time : $t2)
+		isa EventPCRTestSameDateLinks;
+};
+
+
+# RULE SHOP CONFINEMENT
+EventPCRTestSameDateShopConfinementLinksRule1 sub rule,
+when {
+
+$t1 isa PCRTimeDate, has EventDate $eventdate;
+$t2 isa ShopConfinementTimeDate, has EventDate $eventdate;
+(startwhendate : $t2, PeriodOfTime : $pt2) isa PeriodicRelation;
+    
+$pcr1 (time : $t1, localization : $dept) isa 	EventPCRTestRelations;
+$evtconf2 (time : $pt2) isa EventShopConfinementRelations;
+}, then {
+    	(localization : $dept, time : $t1, time : $t2)
+		isa EventPCRTestSameDateLinks;
+};
+
+# RULE DEPT CONFINEMENT
+EventPCRTestSameDateShopConfinementLinksRule2 sub rule,
+when {
+
+$t1 isa PCRTimeDate, has EventDate $eventdate;
+$t2 isa ShopConfinementTimeDate, has EventDate $eventdate;
+(endwhendate : $t2, PeriodOfTime : $pt2) isa PeriodicRelation;
+    
+$pcr1 (time : $t1, localization : $dept) isa 	EventPCRTestRelations;
+$evtconf2 (time : $pt2) isa EventShopConfinementRelations;
+}, then {
+    	(localization : $dept, time : $t1, time : $t2)
+		isa EventPCRTestSameDateLinks;
+};
+
+

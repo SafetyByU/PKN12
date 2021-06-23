@@ -1,0 +1,176 @@
+
+
+define
+
+##################################
+## RULE DEPARTEMENT CONFINEMENT ##
+##################################
+
+EventDepartementConfinementShopsLinks sub relation,
+	relates resource,
+	relates value,
+	relates registeredevent,
+	relates time,
+	relates startwhendate,
+	relates endwhendate;
+
+EventShopsDepartementConfinementRule sub rule,
+when {
+    $dept1 isa StringValue, has StringValueAttribute $value1;
+    $dept2 isa StringValue, has StringValueAttribute $value2;
+    $typedept1 isa TypeValue, has IdValue "Dept";
+    $typedept2 isa TypeValue, has IdValue "departement";
+    $horaires2d isa ValueHorairesStart, has DoubleValueAttribute $value2d;
+    $horaires2f isa ValueHorairesEnd, has DoubleValueAttribute $value2f;
+
+    
+(typevalue : $typedept1, $dept1) 
+	isa TypeValueShopRelations;
+(typevalue : $typedept2, $dept2)	
+	isa TypeValueEventDepartementConfinementRelations;
+(resource : $resource1, $dept1) 
+	isa ValueShopRelations;
+(resource : $resource2, $dept2) 
+	isa ValueEventDepartementConfinementRelations;
+(registeredevent : $evt2, object : $resource2, time : $time2) 
+	isa EventDepartementConfinementRelations;
+(periodoftime: $time2, startwhendate : $startwhendate2, endwhendate : $endwhendate2) 
+	isa PeriodicRelation;
+(resource : $time2, value : $horaires2d) 
+	isa ValueEventDepartementConfinementRelations;
+(resource : $time2, value : $horaires2f) 
+	isa ValueEventDepartementConfinementRelations;
+
+
+$dept1!=$dept2;
+$value1==$value2;
+}, then {
+    (resource : $resource1, resource: $resource2, registeredevent : $evt2, time : $time2, startwhendate : $startwhendate2, endwhendate : $endwhendate2, value : $horaires2d, value : $horaires2f) 
+	isa EventDepartementConfinementShopsLinks;
+};
+
+##################################
+## RULE SHOP CONFINEMENT ##
+##################################
+
+#light
+EventShopConfinementShopsLightLinks sub relation,
+	relates resource;
+
+EventShopConfinementShopsLightRule sub rule,
+when {
+   
+$typesubcategory1 isa TypeValue, has IdValue "SubCategory";
+$typesubcategory2 isa TypeValue, has IdValue "subcategory";
+
+(typevalue : $typesubcategory1, value : $subcategory1) 
+	isa TypeValueShopRelations;
+(typevalue : $typesubcategory2, value : $subcategory2)	
+	isa TypeValueEventShopConfinementRelations;
+
+$subcategory1 isa StringValue, has StringValueAttribute $valuesubcategory1;
+$subcategory2 isa StringValue, has StringValueAttribute $valuesubcategory2;
+
+$valuesubcategory1==$valuesubcategory2;
+
+(resource : $resource1, value : $subcategory1) 
+	isa ValueShopRelations;
+
+(resource : $resource2, value : $subcategory2) 
+	isa ValueEventShopConfinementRelations;
+
+}, then {
+    (resource : $resource1, resource: $resource2) 
+	isa EventShopConfinementShopsLightLinks;
+};
+
+#full
+EventShopConfinementShopsLinks sub relation,
+	relates resource,
+	relates value,
+	relates registeredevent,
+	relates time,
+	relates startwhendate,
+	relates endwhendate;
+
+EventShopConfinementShopsRule sub rule,
+when {
+   
+$typesubcategory1 isa TypeValue, has IdValue "SubCategory";
+$typesubcategory2 isa TypeValue, has IdValue "subcategory";
+
+(typevalue : $typesubcategory1, value : $subcategory1) 
+	isa TypeValueShopRelations;
+(typevalue : $typesubcategory2, value : $subcategory2)	
+	isa TypeValueEventShopConfinementRelations;
+
+$subcategory1 isa StringValue, has StringValueAttribute $valuesubcategory1;
+$subcategory2 isa StringValue, has StringValueAttribute $valuesubcategory2;
+
+$valuesubcategory1==$valuesubcategory2;
+
+
+
+
+(resource : $resource1, value : $subcategory1) 
+	isa ValueShopRelations;
+
+(resource : $resource2, value : $subcategory2) 
+	isa ValueEventShopConfinementRelations;
+
+(registeredevent : $evt2, object : $resource2, time : $time2) 
+	isa EventShopConfinementRelations;
+
+(periodoftime: $time2, startwhendate : $startwhendate2, endwhendate : $endwhendate2) 
+	isa PeriodicRelation;
+
+(resource : $startwhendate2, value : $statusdebut2) 
+	isa ValueEventShopConfinementRelations;
+(resource : $endwhendate2, value : $statusfin2) 
+	isa ValueEventShopConfinementRelations;
+
+
+}, then {
+    (resource : $resource1, resource: $resource2, registeredevent : $evt2, time : $time2,startwhendate : $startwhendate2, endwhendate : $endwhendate2,value : $statusdebut2, value: $statusfin2) 
+	isa EventShopConfinementShopsLinks;
+};
+
+##################################
+## RULE EVT PCR TEST PRECEDENCE	     ##
+##################################
+
+#light
+EventPCRPrecedenceStartLinks sub relation,
+	relates registeredevent,
+	relates time;
+
+EventPCRPrecedenceStartLinksRule sub rule,
+when {
+
+(registeredevent : $evt2, localization : $localization2, time : $time2f)isa EventPCRTestRelations;
+
+$localization2 isa GLN, has CodeGLN $codeGLN1;
+
+(startwhendate : $time2d, endwhendate : $time2f) isa PeriodicRelation;
+
+$time2d isa TimeDate, has EventDate $date2d;
+$time2f isa TimeDate, has EventDate $date2f;
+$time1d isa TimeDate, has EventDate $date1d;
+
+$date1d>$date2d;
+$date1d<$date2f;
+
+(periodoftime : $periodtime1,startwhendate : $time1d, endwhendate :$time1f) isa PeriodicRelation;
+
+$event1 isa event;
+not {$event1 isa EventPCRTest;};
+$event2 isa EventPCRTest;
+
+(registeredevent : $evt1, localization : $localization1, time : $periodtime1)isa eventrelations;
+
+$localization1 isa GLN, has CodeGLN $codeGLN1;
+
+}, then {
+    (registeredevent: $evt1, registeredevent: $evt2, time : $time1d, time : $time2f) 
+	isa EventPCRPrecedenceStartLinks ;
+};

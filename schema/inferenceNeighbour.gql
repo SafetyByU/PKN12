@@ -1,0 +1,34 @@
+
+
+define
+
+##################################
+## RULE EVT NEIGHBOUR           ##
+##################################
+
+EventPCRTestNeighbourLinks sub relation,
+	relates registeredevent,
+	relates what,
+	relates localization,
+	relates object,
+	relates time;
+
+EventPCRTestNeighbourLinksRule sub rule,
+when {
+    
+($dept1, $dept2) isa NeighbourWhereRelation;
+$pcr1 ($dept1, $t1, $w1, registeredevent : $ev1) isa EventPCRTestRelations;
+$pcr2 ($dept2, $t2, $w2, registeredevent : $ev2) isa EventPCRTestRelations;
+$t1 isa PCRTimeDate, has EventDate $eventdate;
+$t2 isa PCRTimeDate, has EventDate $eventdate;
+$w1 isa WhatPCRTest, has Attribut-cl_age90 $age;
+$w2 isa WhatPCRTest, has Attribut-cl_age90 $age;
+
+$dept1!=$dept2;
+}, then {
+    	(registeredevent: $ev1, registeredevent: $ev2, 
+	object: $w1, object: $w2, 
+	localization: $dept1, localization: $dept2, 
+	time : $t1, time : $t2
+)	isa 		EventPCRTestNeighbourLinks ;
+};
