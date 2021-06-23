@@ -3,15 +3,33 @@ package io.grakn.pcrtests.migrate_csv_to_grakn;
 
 enum TypeImport
 {
+	IMPORTCLASSDERIVATED,
+	IMPORTCLASSTEMPERATURE,
 	IMPORTDPT,
 	IMPORTDPTLINKS,
 	IMPORTSHOP,
 	IMPORTPCRTEST,
+	IMPORTVACCINPERTYPE,
+	IMPORTVACCINPERAGE,
 	IMPORTDPTCOUVREFEU,
 	IMPORTSHOPCONFINEMENT,
 	IMPORTWEATHER,
 	POSTCALCULPCRTEST,
-	POSTCALCULLINKSPCRTEST
+	POSTCALCULLINKSPCRTEST,
+	POSTCALCULNEXTDATEPCRTEST,
+	POSTCALCULSAMEDATEPCRTEST,
+	POSTCALCULWEATHER,
+	POSTCALCULWEATHERNEXTDATE,
+	POSTCALCULWEATHERCLEAN, 
+	POSTCALCULWEATHERSAMEDATEPCRTEST,
+	POSTCALCULVACCIN, 
+	POSTCALCULLINKSVACCIN, 
+	POSTCALCULVACCINNEXTDATE,
+	POSTCALCULVACCINSAMEDATEPCRTEST,
+	POSTCALCULDEPARTEMENTCONFINEMENTCLEAN, 
+	POSTCALCULDEPARTEMENTSAMEDATEPCRTEST,
+	POSTCALCULSHOPCONFINEMENTCLEAN,
+	POSTCALCULSHOPSAMEDATEPCRTEST
 }
 
 
@@ -20,6 +38,19 @@ public class OptionImport extends Option {
 
 	private TypeImport typeImport=null;
 	
+	private Boolean onlyDoubleClean=true;
+
+	private Boolean resetRelations=true;
+
+	
+	public Boolean getOnlyDoubleClean() {
+		return onlyDoubleClean;
+	}
+
+	public void setOnlyDoubleClean(Boolean onlyDoubleClean) {
+		this.onlyDoubleClean = onlyDoubleClean;
+	}
+
 	public TypeImport getTypeImport() {
 		return typeImport;
 	}
@@ -28,6 +59,7 @@ public class OptionImport extends Option {
 	{
 		TypeImport typeImport=null;
 		Boolean nextimport=false;
+
 				
 		for (String arg:args)
 		{
@@ -43,6 +75,7 @@ public class OptionImport extends Option {
 			{
 				nextimport=true;
 			}	
+			
 		}
 		if (typeImport!=null)
 			return new OptionImport(typeImport, args);
@@ -55,5 +88,29 @@ public class OptionImport extends Option {
 		super (args);
 		typeImport=myTypeImport;
 		
+		for (String arg:args)
+		{
+			// update
+			if (arg.equals("-c"))
+			{
+				onlyDoubleClean=false;
+			}
+			
+			// reset
+			if (arg.equals("-r"))
+			{
+				resetRelations=true;
+			}
+			
+		}
+		
+	}
+
+	public Boolean getResetRelations() {
+		return resetRelations;
+	}
+
+	public void setResetRelations(Boolean resetRelations) {
+		this.resetRelations = resetRelations;
 	}
 }

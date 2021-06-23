@@ -22,7 +22,7 @@ public class InputDepartements extends InputSetOfData {
 		super(optionImport, filename);
 	}
 	
-	public InputDepartements(OptionImport optionImport, String filename, int myMaxGet, int minIndice, int maxIndice)
+	public InputDepartements(OptionImport optionImport, String filename, int myMaxGet, Long minIndice, Long maxIndice)
 	{	
 		super ( optionImport, filename,  myMaxGet,  minIndice,  maxIndice);
 	}

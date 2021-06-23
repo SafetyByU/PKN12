@@ -2,29 +2,30 @@ package io.grakn.pcrtests.migrate_csv_to_grakn;
 
 import static graql.lang.Graql.parse;
 
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import grakn.client.GraknClient;
 import grakn.client.GraknClient.Transaction.QueryFuture;
 import grakn.client.answer.Answer;
 import grakn.client.answer.ConceptMap;
-import grakn.client.concept.thing.Attribute;
 import grakn.client.concept.thing.Entity;
 import grakn.client.concept.type.EntityType;
 import grakn.client.exception.GraknClientException;
-import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlInsert;
 import io.grakn.pcrtests.migrate_csv_to_grakn.PCRFilesStudyMigration.Input;
@@ -35,57 +36,28 @@ import mjson.Json;
 public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChronology{
 
 	PCRTest pcrtest=null;
+	MyInputPCRTest myInputPCRTest=null;
 
+	public MyInputPCRTest getMyInputPCRTest() {
+		return myInputPCRTest;
+	}
+	public void setMyInputPCRTest(MyInputPCRTest myInputPCRTest) {
+		this.myInputPCRTest = myInputPCRTest;
+	}
 	public Map<Long, String> getCl_age90Id() {
 		return pcrtest.getCl_age90Id();
 	}
-
-	//	static final String PCRTestMetaTypeValue = "PCR";
-	//	static final String PCRTestTypeValue_P = "P";
-	//	static final String PCRTestTypeAttributeValue_P = "LongValueAttribute";
-	//	static final String PCRTestTypeValue_T = "T";
-	//	static final String PCRTestTypeAttributeValue_T = "LongValueAttribute";
-	//	static final String PCRTestTypeValue_PdivT = "PdivT";
-	//	static final String PCRTestTypeAttributeValue_PdivT = "DoubleValueAttribute";
-	//	static final String PCRTestTypeValue_AVPdivT = "AVPdivT";
-	//	static final String PCRTestTypeValue_AVDPdivT = "AVDPdivT";
-	//	static final String PCRTestTypeAttributeValue_AVPdivT = "DoubleValueAttribute";
-	//	static final String PCRTestTypeValue_VPdivT = "VPdivT";
-	//	static final String PCRTestTypeAttributeValue_VPdivT = "DoubleValueAttribute";
-	//	static final String PCRTestTypeValue_ACPdivT = "ACPdivT";
-	//	static final String PCRTestTypeAttributeValue_ACPdivT = "DoubleValueAttribute";
-	//	static final String PCRTestTypeValue_PPOSTCALCUL = "PPOSTCALCUL";
-	//	static final String PCRTestTypeAttributeValue_PPOSTCALCUL = "StringValueAttribute";
-	//	static final String PCRTestTypeValue_PPOSTCALCULLINKS = "PPOSTCALCULLINKS";
-	//	static final String PCRTestTypeAttributeValue_PPOSTCALCULLINKS = "StringValueAttribute";
-	//	//static final String PCRTestTypeValue_cl_age90 = "cl_age90";
-	//	static final String PCRTestTypeAttributeValue_cl_age90 = "LongValueAttribute";
-	//	static final String PCRTestTypeValue_pop = "pop";
-	//	static final String PCRTestTypeAttributeValue_pop = "LongValueAttribute";
-	//
-	//	static final String PCRTestClass_EventPCRTest = "EventPCRTest";
-	//	static final String PCRTestClass_ValueEventPCRTestRelations = "ValueEventPCRTestRelations";
-	//	static final String PCRTestClass_TypeValueEventPCRTestRelations = "TypeValueEventPCRTestRelations";
-	//	static final String PCRTestClass_EventPCRTestRelations = "EventPCRTestRelations";
-	//	static final String PCRTestClass_WhatPCRTest="WhatPCRTest";
-	//	static final String PCRTestClass_PCRTimeDate="PCRTimeDate";
-	//	static final String PCRTestClass_PCRPeriodOfTime="PCRPeriodOfTime";
-	//	static final String PCRTestClass_PCRPeriodicRelation="PCRPeriodicRelation";
-	//
-	//
-	//	static final String TagInitPostCalculate = "0";
-	//	static final String TagAveragePostCalculate = "AV";
-	//	static final String TagSpeedPostCalculate = "S";
-	//	static final String TagAccelerationPostCalculate = "AC";
-	//	static final String TagNotPostCalculate = "-";
-	//
-	//	static final String TagLinksPostCalculate = "L";
 
 	static final int maxnextdays=5;
 	static final int incdays=1;
 	static final int avnb=3;
 
-	//Map<Long, String> cl_age90Id = new HashMap<>();
+	static final String pcr_firstindice = "0";
+
+	static int linksdates_deptindex=0;
+	static int linkssamedates_deptindex=0;
+	static long ind_clage=0;
+	static long ind_prec_clage=0;
 
 	String getMetaType() {return PCRTest.PCRTestMetaTypeValue;}
 	String GetValue_Eventrelation() {return PCRTest.PCRTestClass_ValueEventPCRTestRelations;};
@@ -96,11 +68,182 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 
 
 		InputPCRTest inputpcrtest;
+		LocalDate datepcr=LocalDate.parse((CharSequence)"1900-01-01");;
+
+
+
+		@Override
+		public void saveHistoric(ArrayList<Json> historics, boolean finalsave)
+		{
+
+			ArrayList<Json> subHistorics = new ArrayList<>();
+
+			super.saveHistoric(subHistorics, finalsave);
+
+			// PCR Test
+			if (finalsave==true)
+			{
+				// datePCR
+				Json itemDatePcr = Json.object();
+				itemDatePcr.set("datepcr",datepcr.toString());
+				subHistorics.add(itemDatePcr);
+			}
+			Json itemInputPCRTest = Json.object();
+			itemInputPCRTest.set("InputPCRTest", subHistorics);
+
+			historics=removeHistoric(historics, "InputPCRTest");
+			historics.add(itemInputPCRTest);
+
+			// sequence link post calculate
+			ArrayList<Json> subHistorics2 = new ArrayList<>();
+
+			if (finalsave==true)
+			{
+				// deptindex
+				Json itemDeptIndexLinksDates = Json.object();
+				itemDeptIndexLinksDates.set("linksdates_deptindex",linksdates_deptindex);
+				subHistorics2.add(itemDeptIndexLinksDates);	
+
+				// deptsamedateindex
+				Json itemDeptIndexSameDateLinks = Json.object();
+				itemDeptIndexSameDateLinks.set("linkssamedates_deptindex",linkssamedates_deptindex);
+				subHistorics2.add(itemDeptIndexSameDateLinks);	
+
+				// ind_prec_clage
+				Json itemInd_Prec_Clage = Json.object();
+				itemDeptIndexLinksDates.set("ind_prec_clage",ind_prec_clage);
+				subHistorics2.add(itemInd_Prec_Clage);	
+
+				// ind_clage
+				Json itemInd_Clage = Json.object();
+				itemDeptIndexLinksDates.set("ind_clage",ind_clage);
+				subHistorics2.add(itemInd_Clage);	
+
+				ind_prec_clage=ind_clage;
+			}
+			Json InputPCRTestLinksDates = Json.object();
+			InputPCRTestLinksDates.set("InputPCRTestLinksDates", subHistorics2);
+
+			historics=removeHistoric(historics, "InputPCRTestLinksDates");
+			historics.add(InputPCRTestLinksDates);
+		}
+
+
+		@Override
+		public void loadHistoric(JsonArray historicsInput )
+		{
+
+			Iterator<JsonElement> iterator = historicsInput.iterator();
+			while (iterator.hasNext()) 
+			{
+				JsonElement elt = iterator.next();
+
+				JsonObject json1=elt.getAsJsonObject();
+				Set<Entry<String, JsonElement>> set1=json1.entrySet();
+
+				Iterator<Entry<String, JsonElement>> it1=set1.iterator();
+				while (it1.hasNext()) 
+				{
+					Entry<String, JsonElement> elt1 =  it1.next();
+					if (elt1.getKey().equals("InputPCRTest"))
+					{
+
+						// A JSON array. JSONObject supports java.util.List interface.
+						JsonArray historicsInputPCRList = (JsonArray) elt1.getValue();
+						if (historicsInputPCRList!=null)
+							loadSpecificHistoric(historicsInputPCRList);
+					}
+					if (elt1.getKey().equals("InputPCRTestLinksDates"))
+					{
+
+						// A JSON array. JSONObject supports java.util.List interface.
+						JsonArray historicsInputPCRListLinksDates = (JsonArray) elt1.getValue();
+						if (historicsInputPCRListLinksDates!=null)
+							loadSpecificHistoric(historicsInputPCRListLinksDates);
+					}
+				}
+			}
+		}
+
+		@Override
+		public void loadSpecificHistoric(JsonArray historicsInputPCRList )
+		{
+			super.loadHistoric(historicsInputPCRList );
+
+			Iterator<JsonElement> iterator = historicsInputPCRList.iterator();
+			while (iterator.hasNext()) {
+				JsonElement elt = iterator.next();
+				JsonObject jsonObject= elt.getAsJsonObject();
+				if (jsonObject.get("datepcr")!=null)
+				{
+					JsonElement jsonDatePcr= jsonObject.get("datepcr");
+					LocalDate minPcr=LocalDate.parse((CharSequence)jsonDatePcr.getAsString());
+					if (minPcr.isAfter(minDate))
+					{
+						minDate=minPcr;
+					}
+				}
+
+				if (jsonObject.get("firstIndice")!=null)
+				{
+					JsonElement jsonIndicePcr= jsonObject.get("firstIndice");
+					Long firstIndicePcr=jsonIndicePcr.getAsLong();
+
+					if (firstIndicePcr>indice)
+					{
+						indice=firstIndicePcr;
+					}
+				}
+
+				if (jsonObject.get("minIndice")!=null)
+				{
+					JsonElement jsonIndicePcr= jsonObject.get("minIndice");
+					Long minPcr=jsonIndicePcr.getAsLong();
+
+					if (minPcr+1>minIndice)
+					{
+						minIndice=minPcr+1;
+					}
+				}
+
+				if (jsonObject.get("linksdates_deptindex")!=null)
+				{
+					JsonElement jsondeptIndex= jsonObject.get("linksdates_deptindex");
+					linksdates_deptindex=jsondeptIndex.getAsInt();
+
+				}
+
+				if (jsonObject.get("linkssamedates_deptindex")!=null)
+				{
+					JsonElement jsondeptIndex= jsonObject.get("linkssamedates_deptindex");
+					linkssamedates_deptindex=jsondeptIndex.getAsInt();
+
+				}
+
+				if (jsonObject.get("ind_prec_clage")!=null)
+				{
+					JsonElement jsonInd_prec_clage= jsonObject.get("ind_prec_clage");
+					ind_prec_clage=jsonInd_prec_clage.getAsLong();
+
+				}
+
+				if (jsonObject.get("ind_clage")!=null)
+				{
+					JsonElement jsonInd_Clage= jsonObject.get("ind_clage");
+					ind_clage=jsonInd_Clage.getAsLong();
+
+				}
+			}
+		}
 
 		public MyInputPCRTest(String path, InputPCRTest inputpcrtest) {
 			super(path);
 			// TODO Auto-generated constructor stub
 			this.inputpcrtest=inputpcrtest;
+			inputpcrtest.setMyInputPCRTest(this);
+
+			this.firstIndice= Long.decode(pcr_firstindice);
+			this.indice = firstIndice;
 		}
 
 		@Override
@@ -111,7 +254,7 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 
 				indice++;
 
-				LocalDate datepcr=LocalDate.parse((CharSequence)pcrtestcohorts.at("jour").asString());
+				datepcr=LocalDate.parse((CharSequence)pcrtestcohorts.at("jour").asString());
 
 
 				if (((indice<=maxIndice) && (indice>=minIndice) && (dateFilter==DF_CASE.FALSE))
@@ -164,11 +307,11 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 							+", has Identity \"WPCR-"+indice.toString()
 							+ "\", has Description \"PCR-RESULTS-STATS\"";
 					//		+ ", has Attribut-"+ PCRTestTypeValue_cl_age90 + " " + valuecl_age90.toString() 
-					graqlInsertQuery+=insertAttribut (PCRTest.PCRTestTypeValue_cl_age90, valuecl_age90.toString());
+					graqlInsertQuery+=insertAttribut (Cohort.CohortTypeValue_cl_age90, valuecl_age90.toString());
 					graqlInsertQuery+=insertAttribut (PCRTest.PCRTestTypeValue_P, valueP.toString());
 					graqlInsertQuery+=insertAttribut (PCRTest.PCRTestTypeValue_T, valueT.toString());
 					graqlInsertQuery+=insertAttribut (PCRTest.PCRTestTypeValue_PdivT, sPdivT);
-					graqlInsertQuery+=insertAttribut (PCRTest.PCRTestTypeValue_pop, valuepop.toString());
+					graqlInsertQuery+=insertAttribut (Cohort.CohortTypeValue_pop, valuepop.toString());
 
 					graqlInsertQuery+=";\n";
 
@@ -199,14 +342,14 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 
 	}
 
-	public InputPCRTest(OptionImport optionImport, String filename, int myMaxGet, int minIndice, int maxIndice, DF_CASE dateFilter, LocalDate myMinDate, LocalDate myMaxDate, int myMindays, int myMaxdays)
+	public InputPCRTest(OptionImport optionImport, String filename, int myMaxGet, Long minIndice, Long maxIndice, DF_CASE dateFilter, LocalDate myMinDate, LocalDate myMaxDate, int myMindays, int myMaxdays)
 	{	
 		super (optionImport,filename,  myMaxGet,  minIndice,  maxIndice,  dateFilter, myMinDate,  myMaxDate, myMindays,  myMaxdays);
 		pcrtest= new PCRTest();
 
 	}
 
-	public InputPCRTest(OptionImport optionImport, String filename, int myMaxGet, int minIndice, int maxIndice, LocalDate myMinDate, LocalDate myMaxDate, int myMindays, int myMaxdays)
+	public InputPCRTest(OptionImport optionImport, String filename, int myMaxGet, Long minIndice, Long maxIndice, LocalDate myMinDate, LocalDate myMaxDate, int myMindays, int myMaxdays)
 	{	
 		super (optionImport, filename,  myMaxGet,  minIndice,  maxIndice, myMinDate,  myMaxDate,  myMindays,  myMaxdays);
 		pcrtest= new PCRTest();
@@ -230,11 +373,11 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 		inputs=initialiseDefine(inputs, PCRTest.PCRTestClass_PCRPeriodicRelation, "PeriodicRelation"+SuffixPeriodicRelations);
 
 		List<DefineAttribute> defineattributesWhatPCRTest=new ArrayList<>();
-		DefineAttribute attribut_cl_90 = 	new DefineAttribute(PCRTest.PCRTestTypeAttributeValue_cl_age90,PCRTest.PCRTestTypeValue_cl_age90);
+		DefineAttribute attribut_cl_90 = 	new DefineAttribute(Cohort.CohortTypeAttributeValue_cl_age90,Cohort.CohortTypeValue_cl_age90);
 		DefineAttribute attribut_P = 	new DefineAttribute(PCRTest.PCRTestTypeAttributeValue_P,PCRTest.PCRTestTypeValue_P);
 		DefineAttribute attribut_T = 	new DefineAttribute(PCRTest.PCRTestTypeAttributeValue_T,PCRTest.PCRTestTypeValue_T);
 		DefineAttribute attribut_PdivT = 	new DefineAttribute(PCRTest.PCRTestTypeAttributeValue_PdivT,PCRTest.PCRTestTypeValue_PdivT);
-		DefineAttribute attribut_pop = 	new DefineAttribute(PCRTest.PCRTestTypeAttributeValue_pop,PCRTest.PCRTestTypeValue_pop);
+		DefineAttribute attribut_pop = 	new DefineAttribute(Cohort.CohortTypeAttributeValue_pop,Cohort.CohortTypeValue_pop);
 
 		defineattributesWhatPCRTest.add(attribut_P);
 		defineattributesWhatPCRTest.add(attribut_T);
@@ -285,6 +428,12 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 
 		super.postCalculate(session);
 
+		if (myInputPCRTest == null)
+		{
+			myInputPCRTest=new MyInputPCRTest("", this);
+			JsonArray jsonArray=PCRFilesStudyMigration.loadHistorics();
+			myInputPCRTest.loadHistoric(jsonArray);
+		}
 
 		//ReinitPostCalculationTag(session, PCRTestTypeValue_PPOSTCALCUL, TagAveragePostCalculate, TagInitPostCalculate);
 		//PostAveragePDivTReinitCalculation(session);
@@ -305,6 +454,17 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 			ReinitPostCalculationTag(session, PCRTest.PCRTestTypeValue_PPOSTCALCULLINKS, PCRTest.TagLinksPostCalculate, PCRTest.TagInitPostCalculate);
 			PCRTestPrecedentEventsCalculation(session);
 		}
+
+		if (optionImport.getTypeImport()==TypeImport.POSTCALCULNEXTDATEPCRTEST)
+		{
+			LinkNextEvent(session);
+		}
+
+		if (optionImport.getTypeImport()==TypeImport.POSTCALCULSAMEDATEPCRTEST)
+		{
+			LinkSameDateEvents(session);
+		}
+
 	}
 
 	// Post calculation of derivated (acceleration)
@@ -356,7 +516,7 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 					String graqlQuery12 = "match $valuepostcalcul id " + idpostcalculvalue1+";";
 					graqlQuery12+=		"(value : $valuepostcalcul, resource : $resource) isa ValueRelation;";
 					graqlQuery12+=		"(time : $timedate, localization : $Departement, object : $resource) isa EventPCRTestRelations;";
-					graqlQuery12+=		"$resource isa Resource, has Identity $identity, has Attribut-"+ PCRTest.PCRTestTypeValue_cl_age90+"$cl_age90;";	
+					graqlQuery12+=		"$resource isa Resource, has Identity $identity, has Attribut-"+ Cohort.CohortTypeValue_cl_age90+"$cl_age90;";	
 					graqlQuery12+=		"$Departement isa Departement, has CodeGLN $codeGLN;";	
 					graqlQuery12+=		"$timedate isa TimeDate, has EventDate $attributedate; get;limit ";				
 					graqlQuery12+=		maxGet + ";\n";
@@ -419,7 +579,7 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 								valueVPdivT1 = (Double) queriedattribute.getValue();
 							}
 
-							if (queriedattribute.getTypeValue().compareTo(PCRTest.PCRTestTypeValue_cl_age90)==0)
+							if (queriedattribute.getTypeValue().compareTo(Cohort.CohortTypeValue_cl_age90)==0)
 							{
 								valueattributecl_age90  = (Long) queriedattribute.getValue();
 							}
@@ -433,7 +593,7 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 							String graqlQuery31 = "match $Departement isa Departement, has CodeGLN "+ codeGLN + ";";
 							graqlQuery31+=		"$timedate isa TimeDate, has EventDate " + valuedate2 + ";";
 							graqlQuery31+= 		"(registeredevent : $event, time : $timedate, localization : $Departement, object : $resource) isa EventPCRTestRelations;";
-							graqlQuery31+=		"$resource isa "+ PCRTest.PCRTestClass_WhatPCRTest + ", has Attribut-"+ PCRTest.PCRTestTypeValue_cl_age90 + " " + cl_age90 + ";get;\n";
+							graqlQuery31+=		"$resource isa "+ PCRTest.PCRTestClass_WhatPCRTest + ", has Attribut-"+ Cohort.CohortTypeValue_cl_age90 + " " + cl_age90 + ";get;\n";
 							//graqlQuery3+=		"(value : $valuecl_age90, resource : $resource) isa ValueRelation;";
 							//graqlQuery3+=		"$valuecl_age90 isa LongValue, has LongValueAttribute "+ valueattributecl_age90 + ", has TypeValueId \""+   PCRTestTypeValue_cl_age90 + "\";get;\n";
 							//graqlQuery3+=		"$resource isa Resource, has Identity $identity; get;\n";	
@@ -603,7 +763,7 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 					String graqlQuery12 = "match $valuepostcalcul id " + idpostcalculvalue1 + ";";
 					graqlQuery12+=		"(value : $valuepostcalcul, resource : $resource) isa ValueRelation;";
 					graqlQuery12+=		"(time : $timedate, localization : $Departement, object : $resource) isa EventPCRTestRelations;";
-					graqlQuery12+=		"$resource isa Resource, has Identity $identity, has Attribut-"+ PCRTest.PCRTestTypeValue_cl_age90+"$cl_age90;";	
+					graqlQuery12+=		"$resource isa Resource, has Identity $identity, has Attribut-"+ Cohort.CohortTypeValue_cl_age90+"$cl_age90;";	
 					graqlQuery12+=		"$Departement isa Departement, has CodeGLN $codeGLN;";	
 					graqlQuery12+=		"$timedate isa TimeDate, has EventDate $attributedate; get;limit ";				
 					graqlQuery12+=		maxGet + ";\n";
@@ -655,7 +815,7 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 								valueAVPdivT1 = (Double) queriedattribute.getValue();
 							}
 
-							if (queriedattribute.getTypeValue().compareTo(PCRTest.PCRTestTypeValue_cl_age90)==0)
+							if (queriedattribute.getTypeValue().compareTo(Cohort.CohortTypeValue_cl_age90)==0)
 							{
 								valueattributecl_age90  = (Long) queriedattribute.getValue();
 							}
@@ -669,7 +829,7 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 							String graqlQuery31 = "match $Departement isa Departement, has CodeGLN "+ codeGLN + ";";
 							graqlQuery31+=		"$timedate isa TimeDate, has EventDate " + valuedate2 + ";";
 							graqlQuery31+= 		"(time : $timedate, localization : $Departement, object : $resource) isa EventPCRTestRelations;";
-							graqlQuery31+=		"$resource isa "+ PCRTest.PCRTestClass_WhatPCRTest + ", has Attribut-"+ PCRTest.PCRTestTypeValue_cl_age90 + " " + cl_age90 + ";get;\n";
+							graqlQuery31+=		"$resource isa "+ PCRTest.PCRTestClass_WhatPCRTest + ", has Attribut-"+ Cohort.CohortTypeValue_cl_age90 + " " + cl_age90 + ";get;\n";
 							//graqlQuery3+=		"(value : $valuecl_age90, resource : $resource) isa ValueRelation;";
 							//graqlQuery3+=		"$valuecl_age90 isa LongValue, has LongValueAttribute "+ valueattributecl_age90 + ", has TypeValueId \""+   PCRTestTypeValue_cl_age90 + "\";get;\n";
 							//graqlQuery3+=		"$resource isa Resource, has Identity $identity; get;\n";	
@@ -814,7 +974,7 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 		try
 		{
 			Boolean okanswers = true;
-			Set<String> keysdept=getDepartementId().keySet();
+			//Set<String> keysdept=getDepartementId().keySet();
 
 			GraknClient.Transaction transaction = session.transaction(GraknClient.Transaction.Type.WRITE);
 			int nb=0;
@@ -823,7 +983,7 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 
 			boolean dpt=false;
 			String idDepartement = "";
-			
+
 			if (optionImport.getDept()!=null)
 			{
 				if (optionImport.getDept().length>0)
@@ -835,38 +995,17 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 
 			}
 
-			/*String querydpts="";
-			if (dpt==true)
-			{
-				int numdept=0;
-				querydpts="like \"(";
-				for (String dept:depts)
-				{
-					if (numdept==0) 
-					{
-						querydpts=querydpts+dept;
-					}
-					else
-					{
-						querydpts=querydpts+"|"+dept;
-					}
-				}
-				querydpts=querydpts+")\"";
-			}*/
-			
+
 			while (okanswers==true && nb<maxIndice)
 			{
 				okanswers=false;
-
-				/*String graqlQuery1 = "match $pcrtimedate isa PCRTimeDate, has EventDate $attributedate;";
-				graqlQuery1+= 	"get;limit "+ maxget + ";\n";*/
 
 				String graqlQuery1 = "match $valuepostcalcul isa StringValue"
 						+	", has TypeValueId \"" +  PCRTest.PCRTestTypeValue_PPOSTCALCULLINKS +"\""
 						+ 	", has IdValue $identity;";
 
 				graqlQuery1 += "(resource : $pcrperiodoftime, value : $valuepostcalcul) isa " + PCRTest.PCRTestClass_ValueEventPCRTestRelations+ ";";
-				
+
 				if (dpt==true)
 				{
 					graqlQuery1+=		"(periodoftime : $pcrperiodoftime, startwhendate : $timedate-n, endwhendate : $timedate) isa PeriodicRelation;";
@@ -906,7 +1045,7 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 					graqlQuery12+=		"$timedate-n isa TimeDate, has EventDate $attributedate-n;";				
 					graqlQuery12+=		"(time : $timedate, localization : $departement) isa EventPCRTestRelations;";
 					graqlQuery12+=		"$departement isa Departement, has CodeGLN $codeGLN;";
-					
+
 					if (dpt==false)
 					{
 						graqlQuery12+=		"$departement isa Departement, has CodeGLN $codeGLN;";
@@ -1078,6 +1217,9 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 		}  
 	}
 
+
+
+
 	// Post calculation of derivated (speed)
 	private void PostAveragePDivTReinitCalculation(GraknClient.Session session)  {
 
@@ -1242,7 +1384,7 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 					graqlQuery12+=		"(value : $valuepostcalcul, resource : $resource) isa ValueRelation;";
 					graqlQuery12+=		"(time : $timedate, localization : $Departement, object : $resource) isa EventPCRTestRelations;";
 					graqlQuery12+=		"$resource isa Resource, has Identity $identity";	
-					graqlQuery12+=		queryAttribut (PCRTest.PCRTestTypeValue_cl_age90, "cl_age90");	
+					graqlQuery12+=		queryAttribut (Cohort.CohortTypeValue_cl_age90, "cl_age90");	
 					graqlQuery12+=		queryAttribut (PCRTest.PCRTestTypeValue_PdivT, "attributePdivT");	
 					graqlQuery12+=		";";	
 					graqlQuery12+=		"$Departement isa Departement;";	
@@ -1297,7 +1439,7 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 							//graqlQuery31+= 		"{$date==" + valuedate2 + ";} or {$date==" + valuedate3 + ";};";
 							graqlQuery31+= 		"(time : $timedate, localization : $Departement, object : $resource) isa EventPCRTestRelations;";
 							graqlQuery31+=		"$id_cl_age90 id " + id_cl_age90 + ";";
-							graqlQuery31+=		"$resource isa "+ PCRTest.PCRTestClass_WhatPCRTest + ", has Attribut-"+ PCRTest.PCRTestTypeValue_cl_age90 +" $id_cl_age90;";
+							graqlQuery31+=		"$resource isa "+ PCRTest.PCRTestClass_WhatPCRTest + ", has Attribut-"+ Cohort.CohortTypeValue_cl_age90 +" $id_cl_age90;";
 							//graqlQuery31+=		queryAttribut (PCRTestTypeValue_PdivT, "attributePdivT");
 							graqlQuery31+=		"get;\n";
 							//graqlQuery3+=		"(value : $valuecl_age90, resource : $resource) isa ValueRelation;";
@@ -1471,7 +1613,7 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 
 						String graqlQuery11 = "match $Departement id "+ idDepartement + ";";
 						graqlQuery11 += 	"$Cl_age90 id "+ idCl_age90 + ";";
-						graqlQuery11 += 	"$what isa " + PCRTest.PCRTestClass_WhatPCRTest + ", has Attribut-"+ PCRTest.PCRTestTypeValue_cl_age90 +" $Cl_age90, has Identity $identity";
+						graqlQuery11 += 	"$what isa " + PCRTest.PCRTestClass_WhatPCRTest + ", has Attribut-"+ Cohort.CohortTypeValue_cl_age90 +" $Cl_age90, has Identity $identity";
 						graqlQuery11+=		queryAttribut (PCRTest.PCRTestTypeValue_PdivT, "attributePdivT");	
 						graqlQuery11+=		";";	
 						graqlQuery11+=		"(time : $timedate, localization : $Departement, object : $what) isa EventPCRTestRelations;";
@@ -1728,7 +1870,7 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 							String graqlQuery11 = "match $Departement id "+ idDepartement + ";";
 							graqlQuery11 += 	"$Cl_age90 id "+ idCl_age90 + ";";
 							graqlQuery11 += 	"$timedate id "+ idDate + ";";
-							graqlQuery11 += 	"$what isa " + PCRTest.PCRTestClass_WhatPCRTest + ", has Attribut-"+ PCRTest.PCRTestTypeValue_cl_age90 +" $Cl_age90, has Identity $identity;";
+							graqlQuery11 += 	"$what isa " + PCRTest.PCRTestClass_WhatPCRTest + ", has Attribut-"+ Cohort.CohortTypeValue_cl_age90 +" $Cl_age90, has Identity $identity;";
 							graqlQuery11+=		"(time : $timedate, localization : $Departement, object : $what) isa EventPCRTestRelations;";
 							graqlQuery11+=		"get;offset 1;\n";
 
@@ -1819,4 +1961,578 @@ public class InputPCRTest extends InputSetOfChronology implements IInputSetOfChr
 		return PCRTest.PCRTestClass_TypeValueEventPCRTestRelations;
 	}
 
+
+	// Post calculation of precedents dated events
+	private void LinkNextEvent(GraknClient.Session session)  
+	{
+
+		try
+		{
+			Boolean okanswers = true;
+			boolean close = true;
+			GraknClient.Transaction transaction= null;;
+
+			Set<String> keysdept=getDepartementId().keySet();
+			Set<Long> keyscl_age90=getCl_age90Id().keySet();
+
+			String[] depts=null;
+			String[] clsage90=null;
+
+			boolean dpt=false;
+			if (optionImport.getDept()!=null)
+			{
+				if (optionImport.getDept().length>0)
+				{
+					depts=optionImport.getDept();
+					dpt=true;
+				}
+			}
+			if (dpt==false)
+			{
+				//depts=(String[])(keysdept.toArray());
+				depts=new String[keysdept.size()];
+				int i=0;
+				for (String keydept:keysdept)
+				{
+					depts[i]=keydept;
+					i++;
+				}
+			}
+
+			boolean cl=false;
+			if (optionImport.getClage90()!=null)
+			{
+				if (optionImport.getClage90().length>0)
+				{
+					clsage90=optionImport.getClage90();
+					cl=true;
+				}
+			}
+			if (cl==false)
+			{
+				clsage90=new String[keyscl_age90.size()];
+				int i=0;
+				for (Long keycl_age90:keyscl_age90)
+				{
+					clsage90[i]=keycl_age90.toString();
+					i++;
+				}
+			}
+
+			int ndept=0;
+
+			for (String keydept : depts)
+			{
+				String idDepartement = getDepartementId().get(keydept);
+				ndept++;
+
+				if (ndept>=linksdates_deptindex)
+				{
+					int nextrapole=(ndept*keyscl_age90.size()*254);
+					System.out.println("nextrapole:"+nextrapole);
+
+					//if (nextrapole>minIndice)
+					//{
+					for (String keycl_age90 : clsage90)
+					{
+
+						if (close == true) {
+							transaction = session.transaction(GraknClient.Transaction.Type.WRITE);
+							close = false;
+						}
+
+						String idCl_age90 = getCl_age90Id().get(Long.parseLong(keycl_age90));
+
+
+						String graqlQuery11 = "match $Departement id "+ idDepartement + ";";
+						graqlQuery11 += 	"$Cl_age90 id "+ idCl_age90 + ";";
+						graqlQuery11 += 	"$what isa " + PCRTest.PCRTestClass_WhatPCRTest + ", has Attribut-"+ Cohort.CohortTypeValue_cl_age90 +" $Cl_age90;";
+						graqlQuery11+=		"(time : $timedate, localization : $Departement, object : $what) isa EventPCRTestRelations;";
+						graqlQuery11+=		"$timedate isa PCRTimeDate, has EventDate $attributedate;";				
+
+						if (mindays>0)
+							graqlQuery11+=		"get;sort $attributedate asc;offset "+ mindays + ";limit " + maxdays + ";\n";
+						else
+							graqlQuery11+=		"get;sort $attributedate asc;limit " + maxdays + ";\n";
+
+						System.out.println(graqlQuery11);
+
+						QueryFuture<List<ConceptMap>> map11 = transaction.execute((GraqlGet)parse(graqlQuery11));
+						List<ConceptMap> answers11= map11.get();
+
+
+						String idTimePrevious=null;
+						if (answers11.size()<(maxdays - mindays))
+						{
+
+							for(ConceptMap answer11:answers11)
+							{
+
+								Entity time1= answer11.get("timedate").asEntity();
+								String idTimeNext=time1.id().toString();
+								System.out.println("idTime :" + idTimeNext);
+
+								if (idTimePrevious!=null)
+								{
+									createNextDateLink(transaction, idTimePrevious,  idTimeNext);
+								}
+
+								idTimePrevious=idTimeNext;
+							}
+						}
+						try
+						{
+							transaction.commit();
+							//transaction = session.transaction(GraknClient.Transaction.Type.WRITE);
+							close = true;
+						}
+						catch (GraknClientException e) {
+							System.out.println(e);
+							boolean tobecontinued=false;
+							if (e.getMessage().contains("There is more than one thing")
+									&& e.getMessage().contains("that owns the key")) {
+								tobecontinued=true;
+							}
+							if (e.getMessage().contains("INTERNAL: HTTP/2 error code: PROTOCOL_ERROR")
+									&& e.getMessage().contains("Received Rst Stream")) {
+								tobecontinued=true;
+							}
+							if (tobecontinued==true)
+							{
+								System.out.println("rest of the code...");
+								close = true;
+							} else {
+								throw (e);
+							}
+						}
+						//}
+					}
+					linksdates_deptindex=ndept;
+					getMyInputPCRTest().saveHistoric(PCRFilesStudyMigration.historics, true);
+					PCRFilesStudyMigration.saveHistorics();
+				}
+			}
+			if (close==false)
+				transaction.commit();
+			System.out.println("PostCalculation Next Date PCR OK.\n");
+		}
+		catch(GraknClientException e){
+			System.out.println(e);
+			throw(e);
+		}  
+	}
+
+	// Post calculation of precedents dated events
+	private void LinkSameDateEvents(GraknClient.Session session)  
+	{
+
+		try
+		{
+			Boolean okanswers = true;
+			boolean close = true;
+			GraknClient.Transaction transaction= null;;
+
+			Set<String> keysdept=getDepartementId().keySet();
+			Set<Long> keyscl_age90=getCl_age90Id().keySet();
+
+			String[] depts=null;
+			List<Long> clsage90 = new ArrayList<Long>();
+
+			boolean dpt=false;
+
+			if (optionImport.getDept()!=null)
+			{
+				if (optionImport.getDept().length>0)
+				{
+					depts=optionImport.getDept();
+					dpt=true;
+				}
+			}
+			if (dpt==false)
+			{
+				//depts=(String[])(keysdept.toArray());
+				depts=new String[keysdept.size()];
+				int i=0;
+				for (String keydept:keysdept)
+				{
+					depts[i]=keydept;
+					i++;
+				}
+			}
+
+			boolean cl=false;
+			if (optionImport.getClage90()!=null)
+			{
+				if (optionImport.getClage90().length>0)
+				{
+					for (String aclass:optionImport.getClage90())
+					{
+						clsage90.add(Long.decode(aclass));
+					}
+					cl=true;
+				}
+			}
+			if (cl==false)
+			{
+
+				int i=0;
+				for (Long keycl_age90:keyscl_age90)
+				{
+					clsage90.add(keycl_age90);
+					i++;
+				}
+			}
+			Collections.sort(clsage90);
+			int ndept=0;
+
+			for (String keydept : depts)
+			{
+				String idDepartement = getDepartementId().get(keydept);
+				ndept++;
+
+				if (ndept>=linkssamedates_deptindex)
+				{
+					int nextrapole=(ndept*keyscl_age90.size()*254);
+					System.out.println("nextrapole:"+nextrapole);
+
+					//if (nextrapole>minIndice)
+					//{
+					//long ind_clage=0;
+					//long ind_prec_clage=0;
+
+					for (Long keycl_age90 : clsage90)
+					{
+
+
+						if (close == true) {
+							transaction = session.transaction(GraknClient.Transaction.Type.WRITE);
+							close = false; 
+						}
+
+						if (keycl_age90>=ind_clage)
+						{
+							String idCl_age90 = getCl_age90Id().get(keycl_age90);
+							ind_clage=keycl_age90;
+							
+							String graqlQuery11 = "match $Departement id "+ idDepartement + ";";
+							graqlQuery11 += 	"$Cl_age90 id "+ idCl_age90 + ";";
+							graqlQuery11 += 	"$what isa " + PCRTest.PCRTestClass_WhatPCRTest + ", has Attribut-"+ Cohort.CohortTypeValue_cl_age90 +" $Cl_age90;";
+							graqlQuery11+=		"(time : $timedate, localization : $Departement, object : $what) isa EventPCRTestRelations;";
+							graqlQuery11+=		"$timedate isa PCRTimeDate, has EventDate $attributedate;";				
+
+							if (mindays>0)
+								graqlQuery11+=		"get;sort $attributedate asc;offset "+ mindays + ";limit " + maxdays + ";\n";
+							else
+								graqlQuery11+=		"get;sort $attributedate asc;limit " + maxdays + ";\n";
+
+							System.out.println(graqlQuery11);
+
+							QueryFuture<List<ConceptMap>> map11 = transaction.execute((GraqlGet)parse(graqlQuery11));
+							List<ConceptMap> answers11= map11.get();
+
+							int ndate=0;
+							for(ConceptMap answer11:answers11)
+							{
+								ndate++;
+								Entity time1= answer11.get("timedate").asEntity();
+								String idTime1=time1.id().toString();
+								//System.out.println("idTime :" + idTime1);
+
+								LocalDateTime date1 = (LocalDateTime) answer11.get("attributedate").asAttribute().value();
+								//if (ndate==1 || ndate>=answers11.size()-1)
+								System.out.println("date :" + date1);
+
+								DateTimeFormatter dateformat=DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+
+								// first list with periodic relation
+								////////////////////////////////////
+								String graqlQuery21 = "match ";
+								graqlQuery21 += "{$timedateevent isa ShopConfinementTimeDate, has EventDate " + date1.format(dateformat) + ";}";
+								graqlQuery21 += " or {$timedateevent isa DepartementConfinementTimeDate, has EventDate " + date1.format(dateformat) + ";};";
+								//graqlQuery21+=		"not {$timedateevent isa " + PCRTest.PCRTestClass_PCRTimeDate + ";};";
+								graqlQuery21+=		"$periodicrelation (periodoftime : $period, endwhendate : $timedateevent) isa PeriodicRelation;";
+								//graqlQuery21 		+= "$time1 id "+ idTime1+ ";";				
+								//graqlQuery21		+= "not {(time: $time1, time: $timedateevent) isa " + PCRTest.PCRTestClass_PCRTestSameDateLinks+";};";
+								graqlQuery21+=		"{$Localization id " + idDepartement + ";}";
+								graqlQuery21+=		" or {$Localization isa Country, has CodeGLN \"France\";};";
+								graqlQuery21+=		"(time : $period, localization : $Localization) isa eventrelations;";
+								graqlQuery21+=		"get;\n";
+
+								//System.out.println(graqlQuery21);
+
+								QueryFuture<List<ConceptMap>> map21 = transaction.execute((GraqlGet)parse(graqlQuery21));
+								List<ConceptMap> answers21= map21.get();
+
+								for(ConceptMap answer21:answers21)
+								{					
+									Entity timedateevent= answer21.get("timedateevent").asEntity();
+
+									EntityType type =timedateevent.type();
+									String stype=type.label().getValue();
+
+									if (stype.equals(PCRTest.PCRTestClass_PCRTimeDate)==false)
+									{
+										createSameDateLink(transaction, time1, timedateevent, idDepartement);
+									}
+								}
+
+								// 2nd list with periodic relation
+								////////////////////////////////////
+								String graqlQuery22 = "match ";
+								graqlQuery22 += "{$timedateevent isa ShopConfinementTimeDate, has EventDate " + date1.format(dateformat) + ";}";
+								graqlQuery22 += "or {$timedateevent isa DepartementConfinementTimeDate, has EventDate " + date1.format(dateformat) + ";};";
+								//graqlQuery22+=		"not {$timedateevent isa " + PCRTest.PCRTestClass_PCRTimeDate + ";};";
+								//graqlQuery22 			+= "$time1 id "+ idTime1+ ";";				
+								//graqlQuery22			+= "not {(time: $time1, time: $timedateevent) isa " + PCRTest.PCRTestClass_PCRTestSameDateLinks+";};";
+								graqlQuery22+=		"$periodicrelation (periodoftime : $period, startwhendate : $timedateevent) isa PeriodicRelation;";
+								graqlQuery22+=		"{$Localization id " + idDepartement + ";}";
+								graqlQuery22+=		" or {$Localization isa Country, has CodeGLN \"France\";};";
+								graqlQuery22+=		"(time : $period, localization : $Localization) isa eventrelations;";
+								graqlQuery22+=		"get;\n";
+
+								//System.out.println(graqlQuery22);
+
+								QueryFuture<List<ConceptMap>> map22 = transaction.execute((GraqlGet)parse(graqlQuery22));
+								List<ConceptMap> answers22= map22.get();
+
+								for(ConceptMap answer22:answers22)
+								{					
+									Entity timedateevent= answer22.get("timedateevent").asEntity();
+
+									EntityType type =timedateevent.type();
+									String stype=type.label().getValue();
+
+									if (stype.equals(PCRTest.PCRTestClass_PCRTimeDate)==false)
+									{
+										createSameDateLink(transaction, time1, timedateevent, idDepartement);
+									}
+								}
+
+								//3rd list
+								String graqlQuery23 = "match $timedateevent isa WeatherTimeDate, has EventDate " + date1.format(dateformat) + ";";
+								//graqlQuery23 			+= "$time1 id "+ idTime1+ ";";				
+								//graqlQuery23			+= "not {(time: $time1, time: $timedateevent) isa " + PCRTest.PCRTestClass_PCRTestSameDateLinks+";};";
+								graqlQuery23+=		"$Localization id " + idDepartement + ";";
+								graqlQuery23+=		"(time : $timedateevent, localization : $Localization) isa " + InputWeather.WeatherClass_EventWeatherRelations + ";";
+								//graqlQuery23+=		"not {$timedateevent isa " + PCRTest.PCRTestClass_PCRTimeDate + ";};";
+								graqlQuery23+=		"get;\n";
+
+								//System.out.println(graqlQuery23);
+
+								QueryFuture<List<ConceptMap>> map23 = transaction.execute((GraqlGet)parse(graqlQuery23));
+								List<ConceptMap> answers23= map23.get();
+
+								//System.out.println(answers23.toString());
+
+								for(ConceptMap answer23:answers23)
+								{	
+									Entity timedateevent= answer23.get("timedateevent").asEntity();
+
+									EntityType type =timedateevent.type();
+									String stype=type.label().getValue();
+
+									if (stype.equals(PCRTest.PCRTestClass_PCRTimeDate)==false)
+									{
+										createSameDateLink(transaction, time1, timedateevent, idDepartement);
+									}
+								}
+
+
+								//4th list
+								String graqlQueryAge;
+								if (ind_clage ==0 && ind_prec_clage==0)
+								{
+									graqlQueryAge="$keycl_age90 "+ind_clage+";";
+								}
+								else if (ind_prec_clage==0)
+								{
+									graqlQueryAge			= "$keycl_age90<="+ind_clage+";";
+									graqlQueryAge			+= "$keycl_age90>=1;";
+								}
+								else
+								{
+									graqlQueryAge			= "$keycl_age90<="+ind_clage+";";
+									graqlQueryAge			+= "$keycl_age90>"+ind_prec_clage+";";
+								}
+								String graqlQuery24 = "match $timedateevent isa VaccinTimeDate, has EventDate " + date1.format(dateformat) + ";";
+								//graqlQuery24 			+= "$time1 id "+ idTime1+ ";";				
+								//graqlQuery24			+= "not {(time: $time1, time: $timedateevent) isa " + PCRTest.PCRTestClass_PCRTestSameDateLinks+";};";
+								graqlQuery24			+=	"$Localization id " + idDepartement + ";";
+								graqlQuery24			+=		"(time : $timedateevent, localization : $Localization, object : $what) isa " + Vaccin.VaccinClass_EventVaccinRelations + ";";
+								graqlQuery24			+= "$what isa " + Vaccin.VaccinClass_WhatVaccin+", has " + "Attribut-"+ Cohort.CohortTypeValue_cl_age90 + " $keycl_age90;";
+								graqlQuery24			+= graqlQueryAge;
+								//graqlQuery23+=		"not {$timedateevent isa " + PCRTest.PCRTestClass_PCRTimeDate + ";};";
+
+								graqlQuery24+=		"get;\n";
+
+								//System.out.println(graqlQuery23);
+
+								QueryFuture<List<ConceptMap>> map24 = transaction.execute((GraqlGet)parse(graqlQuery24));
+								List<ConceptMap> answers24= map24.get();
+
+								//System.out.println(answers23.toString());
+
+								for(ConceptMap answer24:answers24)
+								{	
+									Entity timedateevent= answer24.get("timedateevent").asEntity();
+
+									EntityType type =timedateevent.type();
+									String stype=type.label().getValue();
+
+									if (stype.equals(Vaccin.VaccinClass_VaccinTimeDate)==true)
+									{
+										//boolean sameclassage=verifSameClassAge(transaction, timedateevent, keycl_age90);
+
+										//if (sameclassage==true)
+										{
+											createSameDateLink(transaction, time1, timedateevent, idDepartement);
+										}
+									}
+									else if (stype.equals(PCRTest.PCRTestClass_PCRTimeDate)==false)
+									{
+										createSameDateLink(transaction, time1, timedateevent, idDepartement);
+									}
+								}
+							}
+						}
+						try
+						{
+							transaction.commit();
+							//transaction = session.transaction(GraknClient.Transaction.Type.WRITE);
+							close = true;
+						}
+						catch (GraknClientException e) {
+							System.out.println(e);
+							boolean tobecontinued=false;
+							if (e.getMessage().contains("There is more than one thing")
+									&& e.getMessage().contains("that owns the key")) {
+								tobecontinued=true;
+							}
+							if (e.getMessage().contains("INTERNAL: HTTP/2 error code: PROTOCOL_ERROR")
+									&& e.getMessage().contains("Received Rst Stream")) {
+								tobecontinued=true;
+							}
+							if (tobecontinued==true)
+							{
+								System.out.println("rest of the code...");
+								close = true;
+							} else {
+								throw (e);
+							}
+
+						}
+						//}
+						getMyInputPCRTest().saveHistoric(PCRFilesStudyMigration.historics, true);
+						PCRFilesStudyMigration.saveHistorics();
+
+						ind_prec_clage=ind_clage;
+					}
+					ind_clage=0;
+					ind_prec_clage=0;
+					linkssamedates_deptindex=ndept;
+					getMyInputPCRTest().saveHistoric(PCRFilesStudyMigration.historics, true);
+					PCRFilesStudyMigration.saveHistorics();
+				}
+			}
+			if (close==false)
+				transaction.commit();
+			System.out.println("PostCalculation Next Date PCR OK.\n");
+		}
+		catch(GraknClientException e){
+			System.out.println(e);
+			throw(e);
+		}  
+	}
+
+	// create link sequence between time event
+	protected boolean verifSameClassAge(GraknClient.Transaction transaction, Entity timeVaccin, String classAge)  
+	{
+		boolean sameclass=true;
+
+		// verif existence
+		String graqlQuery 	= "match $timeVaccin id "+ timeVaccin.id().toString()+ ";";				
+		graqlQuery			+= "(time: $timeVaccin, object: $what) isa " + Vaccin.VaccinClass_EventVaccinRelations+";";
+		graqlQuery			+= "$what isa " + Vaccin.VaccinClass_WhatVaccin+", has " + "Attribut-"+ Cohort.CohortTypeValue_cl_age90 + " $clage;";
+		graqlQuery			+= "get;limit 1;\n";
+
+		//System.out.println("query : "+ graqlQuery);
+
+		QueryFuture<List<ConceptMap>> map1 = transaction.execute((GraqlGet)parse(graqlQuery));
+		List<ConceptMap> answers1= map1.get();
+
+		if (answers1.isEmpty())
+		{
+			if (classAge.equals("0")==false)
+			{
+				sameclass=false;
+			}
+		}
+		else
+		{
+			for(ConceptMap answer1:answers1)
+			{	
+				String clage = (String) answer1.get("clage").asAttribute().value().toString();
+				if (clage==null || clage.equals("0"))
+				{
+					if (classAge.equals("0")==true)
+					{
+						sameclass=true;
+					}
+					else
+					{
+						sameclass=false;
+					}
+				}
+				else
+				{
+					if (classAge.equals(clage)==true)
+					{
+						sameclass=true;
+					}
+					else
+					{
+						sameclass=false;
+					}
+				}
+			}
+		}
+		return sameclass;
+	}
+
+//	// create link sequence between time event
+//	protected void createSameDateLink(GraknClient.Transaction transaction, Entity time1, Entity time2, String idLocalization)  
+//	{
+//		// verif existence
+//		String graqlQuery 	= "match $time1 id "+ time1.id().toString()+ ";";				
+//		graqlQuery 			+= "$time2 id "+ time2.id().toString()+ ";";				
+//		graqlQuery			+= "(time: $time1, time: $time2) isa " + PCRTest.PCRTestClass_PCRTestSameDateLinks+";get;limit 1;\n";
+//
+//		//System.out.println("query : "+ graqlQuery);
+//
+//		QueryFuture<List<ConceptMap>> map2 = transaction.execute((GraqlGet)parse(graqlQuery));
+//		List<ConceptMap> answers2= map2.get();
+//
+//		if (answers2.isEmpty())
+//		{
+//			// relations creation
+//			String graqlInsertQuery 	= "match $time1 id "+ time1.id().toString()+ ";";				
+//			graqlInsertQuery 			+= "$time2 id "+ time2.id().toString()+ ";";		
+//			if (idLocalization!=null)
+//			{
+//				graqlInsertQuery 			+= "$localization1 id "+ idLocalization+ ";";		
+//				graqlInsertQuery			+= "insert (time: $time1, time: $time2, localization : $localization1) isa " + PCRTest.PCRTestClass_PCRTestSameDateLinks+ ";\n";
+//
+//			}
+//
+//			else
+//			{
+//				graqlInsertQuery			+= "insert (time: $time1, time: $time2) isa " + PCRTest.PCRTestClass_PCRTestSameDateLinks+ ";\n";
+//			}
+//			System.out.println("query : "+ graqlInsertQuery);
+//
+//			QueryFuture<List<ConceptMap>> map3 = transaction.execute((GraqlInsert)parse(graqlInsertQuery));
+//			List<ConceptMap> answers3= map3.get();
+//		}
+//	}
 }

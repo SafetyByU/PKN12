@@ -81,23 +81,24 @@ public abstract class InputSetOfData implements IInputSetOfData{
 	static final String AttributPrefix="Attribut-";
 
 
-	int minIndice=0;
-	int maxIndice=1000000000;
+	Long minIndice=Long.valueOf(0);
+	Long maxIndice=Long.valueOf(1000000000);
 	int maxGet=250;
+	Long indice;
 
 	//protected String filename;
 
 
-	public int getMinindice() {
+	public Long getMinindice() {
 		return minIndice;
 	}
-	public void setMinindice(int minIndice) {
+	public void setMinindice(Long minIndice) {
 		this.minIndice = minIndice;
 	}
-	public int getMaxindice() {
+	public Long getMaxindice() {
 		return maxIndice;
 	}
-	public void setMaxindice(int maxIndice) {
+	public void setMaxindice(Long maxIndice) {
 		this.maxIndice = maxIndice;
 	}
 	public int getMaxget() {
@@ -107,16 +108,16 @@ public abstract class InputSetOfData implements IInputSetOfData{
 		this.maxGet = maxget;
 	}
 
-
 	InputSetOfData(OptionImport myOptionImport,String filename)
 	{
 		optionImport=myOptionImport;
 		this.setOfData.setFilename(filename);
 	}
 
-	public InputSetOfData(OptionImport myOptionImport,String filename, int myMaxGet, int minIndice, int maxIndice)
+	public InputSetOfData(OptionImport myOptionImport,String filename, int myMaxGet, Long minIndice, Long maxIndice)
 	{
 		optionImport=myOptionImport;
+			
 		setOfData=new SetOfData();
 		
 		this.setOfData.setFilename(filename);
@@ -631,6 +632,42 @@ public abstract class InputSetOfData implements IInputSetOfData{
 
 	}
 
+	protected // value delete
+	QueryFuture<? extends List<? extends Answer>> deleteThePeriodOfTimeById(GraknClient.Transaction transaction, String idpt)  {
+
+		String deleteQuery="";
+
+		deleteQuery= "match ";
+		deleteQuery+= "$pt id " + idpt + ";";	
+		deleteQuery+= "delete $pt isa PeriodOfTime;";
+
+		final GraqlDelete parseddelete = Graql.parse(deleteQuery).asDelete();
+
+		QueryFuture<? extends List<? extends Answer>> map  = transaction.execute(parseddelete);
+
+		return map;
+
+	}
+	
+	protected // value delete
+	QueryFuture<? extends List<? extends Answer>> deleteTheTimeAndValuesById(GraknClient.Transaction transaction, String idt)  {
+
+		// delete linked values
+		QueryFuture<? extends List<? extends Answer>> map1  = deleteAllValuesByResourceId(transaction, idt);
+		
+		String deleteQuery="";
+
+		deleteQuery= "match ";
+		deleteQuery+= "$t id " + idt + ";";	
+		deleteQuery+= "delete $t isa TimeDate;";
+
+		final GraqlDelete parseddelete = Graql.parse(deleteQuery).asDelete();
+
+		QueryFuture<? extends List<? extends Answer>> map  = transaction.execute(parseddelete);
+
+		return map;
+
+	}
 	
 	protected // value delete
 	QueryFuture<? extends List<? extends Answer>> deleteRelationTypeValueById(GraknClient.Transaction transaction, String idvalue)  {
@@ -672,21 +709,35 @@ public abstract class InputSetOfData implements IInputSetOfData{
 	protected // delete all value from resource
 	QueryFuture<? extends List<? extends Answer>> deleteAllValuesByResourceId(GraknClient.Transaction transaction, String idresource)  {
 
-		String deleteQuery="";
-
-		deleteQuery+= "match $relationtypevalue (value : $value) isa ValueTypeRelation;";
+		String deleteQuery= "match $relationtypevalue (value : $value) isa ValueTypeRelation;";
 		deleteQuery+= "$relationvalue (value : $value, resource : $resource) isa ValueRelation;";
-		deleteQuery+= "$resource id " + idresource + "\n";
+		deleteQuery+= "$resource id " + idresource + ";\n";
 
-		deleteQuery+= "delete $relationvalue isa ValueRelation;";
-		deleteQuery+= "delete $relationtypevalue isa ValueTypeRelation;";
-		deleteQuery+= "delete $value isa Value;";
+		// delete ValueTypeRelation
+		String deleteQuery2= deleteQuery + "delete $relationtypevalue isa ValueTypeRelation;\n";
+		final GraqlDelete parseddelete2 = Graql.parse(deleteQuery2).asDelete();
 
-		final GraqlDelete parseddelete = Graql.parse(deleteQuery).asDelete();
+		QueryFuture<? extends List<? extends Answer>> map2  = transaction.execute(parseddelete2);
+		
+		// query without typerelation already deleted
+		deleteQuery= "match $relationvalue (value : $value, resource : $resource) isa ValueRelation;";
+		deleteQuery+= "$resource id " + idresource + ";\n";
 
-		QueryFuture<? extends List<? extends Answer>> map  = transaction.execute(parseddelete);
+		// delete Value
+		String deleteQuery3 = deleteQuery + "delete $value isa Value;";
+		final GraqlDelete parseddelete3 = Graql.parse(deleteQuery3).asDelete();
 
-		return map;
+		QueryFuture<? extends List<? extends Answer>> map3  = transaction.execute(parseddelete3);
+		
+		// delete ValueRelation
+		String deleteQuery1= deleteQuery + "delete $relationvalue isa ValueRelation;";
+		final GraqlDelete parseddelete1 = Graql.parse(deleteQuery1).asDelete();
+
+		QueryFuture<? extends List<? extends Answer>> map1  = transaction.execute(parseddelete1);
+		
+
+		
+		return map3;
 
 	}
 
@@ -727,20 +778,25 @@ public abstract class InputSetOfData implements IInputSetOfData{
 		{	
 		case WHORELATION : 
 			deleteQuery+=  "actor : $resource)";
+			break;
 		case WHATRELATION : 
 			deleteQuery+=  "object : $resource)";
+			break;
 		case WHYRELATION : 
 			deleteQuery+=  "goal : $resource)";
+			break;
 		case TIMERELATION : 
 			deleteQuery+=  "time : $resource)";
+			break;
 		case WHERERELATION : 
 			deleteQuery+=  "localization : $resource)";
+			break;
 		default:
 			break;
 		}
 		deleteQuery+=  " isa eventrelations;\n";
 		
-		deleteQuery+= "$resource id " + idresource + "\n";
+		deleteQuery+= "$resource id " + idresource + ";";
 
 		deleteQuery+= "delete $event isa event;";
 
@@ -753,6 +809,93 @@ public abstract class InputSetOfData implements IInputSetOfData{
 	}
 
 	protected // event delete
+	QueryFuture<? extends List<? extends Answer>> deleteLinkedTimeEventByResourceId(GraknClient.Transaction transaction, String idresource, RelationTypeEvent relationtypevent)  {
+
+		String deleteQuery="";
+
+		deleteQuery+= "match $eventrelations (";
+		deleteQuery+=  "time : $time,";
+		
+		switch (relationtypevent)
+		{	
+		case WHORELATION : 
+			deleteQuery+=  "actor : $resource)";
+			break;
+		case WHATRELATION : 
+			deleteQuery+=  "object : $resource)";
+			break;
+		case WHYRELATION : 
+			deleteQuery+=  "goal : $resource)";
+			break;
+		case TIMERELATION : 
+			deleteQuery+=  "time : $resource)";
+			break;
+		case WHERERELATION : 
+			deleteQuery+=  "localization : $resource)";
+			break;
+		default:
+			break;
+		}
+		deleteQuery+=  " isa eventrelations;";
+		
+		deleteQuery+= "$resource id " + idresource + ";";
+
+		deleteQuery+= "delete $time isa When;";
+
+		final GraqlDelete parseddelete = Graql.parse(deleteQuery).asDelete();
+
+		QueryFuture<? extends List<? extends Answer>> map  = transaction.execute(parseddelete);
+
+		return map;
+
+	}
+	
+	protected // event delete
+	QueryFuture<? extends List<? extends Answer>> deleteLinkedAllValuesTimeEventByResourceId(GraknClient.Transaction transaction, String idresource, RelationTypeEvent relationtypevent)  {
+
+		String deleteQuery="";
+
+		deleteQuery+= "match $eventrelations (";
+		deleteQuery+=  "time : $time,";
+		
+		switch (relationtypevent)
+		{	
+		case WHORELATION : 
+			deleteQuery+=  "actor : $resource)";
+			break;
+		case WHATRELATION : 
+			deleteQuery+=  "object : $resource)";
+			break;
+		case WHYRELATION : 
+			deleteQuery+=  "goal : $resource)";
+			break;
+		case TIMERELATION : 
+			deleteQuery+=  "time : $resource)";
+			break;
+		case WHERERELATION : 
+			deleteQuery+=  "localization : $resource)";
+			break;
+		default:
+			break;
+		}
+		deleteQuery+=  " isa eventrelations;";
+		
+		deleteQuery+= "$resource id " + idresource + ";";
+
+		deleteQuery+= "(value : $value, resource : $time) isa ValueRelation;\n";
+		
+		deleteQuery+= "delete $value isa Value;";
+
+		final GraqlDelete parseddelete = Graql.parse(deleteQuery).asDelete();
+
+		QueryFuture<? extends List<? extends Answer>> map  = transaction.execute(parseddelete);
+
+		return map;
+
+	}
+	
+	
+	protected // event delete
 	QueryFuture<? extends List<? extends Answer>> deleteEventRelationByResourceId(GraknClient.Transaction transaction, String idresource, RelationTypeEvent relationtypevent)  {
 
 		String deleteQuery="";
@@ -763,21 +906,27 @@ public abstract class InputSetOfData implements IInputSetOfData{
 		{
 		case EVENTRELATION : 
 			deleteQuery+=  "registeredevent : $resource)";	
+			break;
 		case WHORELATION : 
 			deleteQuery+=  "actor : $resource)";
+			break;
 		case WHATRELATION : 
 			deleteQuery+=  "object : $resource)";
+			break;
 		case WHYRELATION : 
 			deleteQuery+=  "goal : $resource)";
+			break;
 		case TIMERELATION : 
 			deleteQuery+=  "time : $resource)";
+			break;
 		case WHERERELATION : 
 			deleteQuery+=  "localization : $resource)";
+			break;
 		}
-		deleteQuery+=  " isa eventrelations;\n";
-		deleteQuery+= "$resource id " + idresource + "\n";
+		deleteQuery+=  " isa eventrelations;";
+		deleteQuery+= "$resource id " + idresource + ";";
 
-		deleteQuery+= "delete $relation isa eventrelations;";
+		deleteQuery+= "delete $eventrelations isa eventrelations;";
 
 		final GraqlDelete parseddelete = Graql.parse(deleteQuery).asDelete();
 
@@ -796,6 +945,14 @@ public abstract class InputSetOfData implements IInputSetOfData{
 		// suppress linked event
 		QueryFuture<? extends List<? extends Answer>> map2  = deleteLinkedEventByResourceId(transaction, idresource, relationtypevent);
 
+		// suppress linked time values
+		QueryFuture<? extends List<? extends Answer>> map21  = deleteLinkedAllValuesTimeEventByResourceId(transaction, idresource, relationtypevent);
+
+		
+		// suppress linked time
+		QueryFuture<? extends List<? extends Answer>> map22  = deleteLinkedTimeEventByResourceId(transaction, idresource, relationtypevent);
+
+		
 		// suppress event relations
 		QueryFuture<? extends List<? extends Answer>> map3  = deleteEventRelationByResourceId(transaction, idresource, relationtypevent);
 
@@ -985,6 +1142,7 @@ public abstract class InputSetOfData implements IInputSetOfData{
 
 		return st;
 	}
+	
 	
 
 

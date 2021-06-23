@@ -237,7 +237,7 @@ public class ReportPCRTest extends ReportSetOfChronology implements IReportSetOf
 
 					String graqlQuery11 = "match $Departement id "+ idDepartement + ";";
 					graqlQuery11 += 	"$Cl_age90 id "+ idCl_age90 + ";";
-					graqlQuery11 += 	"$what isa " + PCRTest.PCRTestClass_WhatPCRTest + ", has Attribut-"+ PCRTest.PCRTestTypeValue_cl_age90 +" $Cl_age90, has Identity $identity;";
+					graqlQuery11 += 	"$what isa " + PCRTest.PCRTestClass_WhatPCRTest + ", has Attribut-"+ Cohort.CohortTypeValue_cl_age90 +" $Cl_age90, has Identity $identity;";
 					graqlQuery11+=		"(time : $timedate, localization : $Departement, object : $what) isa EventPCRTestRelations;";			
 					graqlQuery11+=		"$timedate isa TimeDate, has EventDate $attributedate;";				
 					//					graqlQuery11+=		"(resource : $what, value : $value) isa ValueRelation;";	

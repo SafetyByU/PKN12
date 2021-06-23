@@ -27,7 +27,7 @@ public class InputShops extends InputSetOfData {
 		super(optionImport, filename);
 	}
 	
-	public InputShops (OptionImport optionImport,String filename, int myMaxGet, int minIndice, int maxIndice)
+	public InputShops (OptionImport optionImport,String filename, int myMaxGet, Long minIndice, Long maxIndice)
 	{	
 		super ( optionImport, filename,  myMaxGet,  minIndice,  maxIndice);
 	}
