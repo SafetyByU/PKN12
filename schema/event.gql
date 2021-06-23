@@ -91,7 +91,9 @@ Who sub Resource , abstract,
 	plays memberwho;
 What sub Resource,
 	has Description,
-	plays object;
+	plays object,
+	plays object1,
+	plays object2;
 Why sub Resource ,
 	has Description,
 	plays goal;
@@ -100,7 +102,9 @@ Where	sub Resource , abstract,
 	plays localization;
 When	sub Resource , abstract,
 	has TypeWhen,
-	plays time;
+	plays time,
+	plays time1,
+	plays time2;
 
 ###################
 ## WHAT TYPES 	##
@@ -140,7 +144,10 @@ TimeStamp sub When, abstract,
 	plays endwhendate,
 	plays relativedate,
 	plays belowdate,
-	plays abovedate;
+	plays abovedate,
+	plays previousdate,
+	plays nextdate,
+	plays onedate;
 
 TimeDate sub TimeStamp,
 	has EventDate;
@@ -168,6 +175,15 @@ DatesBetweenRelation sub relation,
 	relates abovedate,
 	relates value;
 
+
+## sequenced date
+SequencedDatesRelation sub relation,
+	relates previousdate,
+	relates nextdate;
+
+## sequenced date
+SameDatesRelation sub relation,
+	relates onedate;
 
 ###################
 ## WHERE TYPES   ##
@@ -304,3 +320,21 @@ ValueRelation sub relation,
 	relates resource,
 	relates value;
 
+MinValueAttribute sub attribute,
+	value double;
+MaxValueAttribute sub attribute,
+	value double;
+LabelValueAttribute sub attribute,
+	value string;
+TypeValueAttribute sub attribute,
+	value string;
+
+ClassValues sub  Value ,
+	has LabelValueAttribute ,
+	has MinValueAttribute,
+	has MaxValueAttribute,
+plays classvalues;
+
+ClassValuesWhat sub relation,
+	relates object,
+	relates classvalues;
