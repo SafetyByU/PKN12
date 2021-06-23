@@ -1,0 +1,9 @@
+TypeValue;Min;Max;Label
+WeatherTypeValue_T;;-10;<10°c
+WeatherTypeValue_T;-10;-5;from -10°c to -5°c
+WeatherTypeValue_T;-5;0;from -5°c to -0°c
+WeatherTypeValue_T;0;5;from 0°c to 5°c
+WeatherTypeValue_T;5;10;from 5°c to 10°c
+WeatherTypeValue_T;10;20;from 10°c to 20°c
+WeatherTypeValue_T;20;30;from 20°c to 30°c
+WeatherTypeValue_T;30;;>30°c
